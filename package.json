@@ -23,9 +23,12 @@
   ],
   "scripts": {
     "build": "rimraf lib && rollup -c",
+    "prepublishOnly": "yarn test --coverage && yarn build",
+    "release": "changeset publish",
     "test": "jest src/"
   },
   "devDependencies": {
+    "@changesets/cli": "2.29.8",
     "@rollup/plugin-node-resolve": "16.0.3",
     "@rollup/plugin-terser": "0.4.4",
     "@rollup/plugin-typescript": "12.3.0",
