@@ -39,10 +39,10 @@ jobs:
     - name: Unit tests
       run: yarn test --coverage
 
-    # - name: Integration tests
-    #   run: |
-    #     yarn build
-    #     yarn test:integration
+    - name: Integration tests
+      run: |
+        yarn build
+        # yarn test:integration
 
     - name: Check code quality
       run: yarn knip
