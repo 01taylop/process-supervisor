@@ -1,1 +1,5 @@
-console.log('Hello, Process Supervisor!')
+const processSupervisor = () => console.log('Hello, Process Supervisor!')
+
+export {
+  processSupervisor,
+}
