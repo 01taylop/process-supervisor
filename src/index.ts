@@ -92,7 +92,17 @@ class ProcessSupervisor {
    * @throws Error if the resource is not found
    */
   async start(id: string): Promise<void> {
-    // TODO: Implement
+    const resource = this.getResource(id)
+
+    if ([ProcessState.STARTING, ProcessState.RUNNING].includes(resource.state)) {
+      console.warn(`Resource "${id}" is already ${resource.state.toLowerCase()}`)
+      return
+    }
+
+    if (resource.state === ProcessState.STOPPING) {
+      console.warn(`Resource "${id}" is still stopping, cannot start`)
+      return
+    }
   }
 
   /**
@@ -102,7 +112,21 @@ class ProcessSupervisor {
    * @throws Error if the resource is not found
    */
   async stop(id: string): Promise<void> {
-    // TODO: Implement
+    const resource = this.getResource(id)
+
+    if (resource.state === ProcessState.IDLE) {
+      return
+    }
+
+    if ([ProcessState.STOPPING, ProcessState.STOPPED].includes(resource.state)) {
+      console.warn(`Resource "${id}" is already ${resource.state.toLowerCase()}`)
+      return
+    }
+
+    if (resource.state === ProcessState.STARTING) {
+      console.warn(`Resource "${id}" is still starting, cannot stop`)
+      return
+    }
   }
 
   /**
@@ -111,6 +135,18 @@ class ProcessSupervisor {
    */
   async shutdownAll(): Promise<void> {
     // TODO: Implement
+  }
+
+  // ==================================================
+  // Private Methods
+  // ==================================================
+
+  private getResource(id: string): ManagedResource<any> {
+    const resource = this.resources.get(id)
+    if (!resource) {
+      throw new Error(`Resource with id "${id}" is not registered`)
+    }
+    return resource
   }
 
 }
