@@ -11,6 +11,7 @@ import type {
  * Provides centralised state tracking and coordinated shutdown
  */
 class ProcessSupervisor {
+
   private readonly defaultTimeout: number
 
   private resources: Map<string, ManagedResource<any>> = new Map()
@@ -83,6 +84,35 @@ class ProcessSupervisor {
   get size(): number {
     return this.resources.size
   }
+
+  /**
+   * Start a managed resource
+   *
+   * @param id - The resource identifier
+   * @throws Error if the resource is not found
+   */
+  async start(id: string): Promise<void> {
+    // TODO: Implement
+  }
+
+  /**
+   * Stop a managed resource
+   *
+   * @param id - The resource identifier
+   * @throws Error if the resource is not found
+   */
+  async stop(id: string): Promise<void> {
+    // TODO: Implement
+  }
+
+  /**
+   * Stop all managed resources
+   * Stops all resources in parallel and waits for completion
+   */
+  async shutdownAll(): Promise<void> {
+    // TODO: Implement
+  }
+
 }
 
 export {

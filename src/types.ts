@@ -26,7 +26,14 @@ enum ProcessState {
 interface ManagedResourceConfig<T = unknown> {
   /**
    * Function to start the resource
-   * Returns the running resource instance
+   *
+   * IMPORTANT: Must be a function that creates the resource when called.
+   * Do NOT execute the resource before passing it in.
+   *
+   * ✅ Correct: start: () => spawn('cmd')
+   * ❌ Wrong:   start: spawn('cmd')
+   *
+   * @returns The running resource instance
    */
   start: () => T | Promise<T>
 
