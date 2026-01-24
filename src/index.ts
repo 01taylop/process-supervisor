@@ -94,6 +94,7 @@ class ProcessSupervisor {
   async start(id: string): Promise<void> {
     const resource = this.getResource(id)
 
+    // Validate state
     if ([ProcessState.STARTING, ProcessState.RUNNING].includes(resource.state)) {
       console.warn(`Resource "${id}" is already ${resource.state.toLowerCase()}`)
       return
@@ -102,6 +103,17 @@ class ProcessSupervisor {
     if (resource.state === ProcessState.STOPPING) {
       console.warn(`Resource "${id}" is still stopping, cannot start`)
       return
+    }
+
+    // Start resource
+    try {
+      resource.state = ProcessState.STARTING
+      resource.instance = await resource.config.start()
+      resource.state = ProcessState.RUNNING
+    } catch (error) {
+      resource.state = ProcessState.FAILED
+      resource.error = error instanceof Error ? error : new Error(String(error))
+      throw error
     }
   }
 
