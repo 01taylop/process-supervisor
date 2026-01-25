@@ -144,12 +144,17 @@ class ProcessSupervisor {
     // Stop resource
     try {
       resource.state = ProcessState.STOPPING
+
+      let timeoutId: NodeJS.Timeout
+      const timeoutPromise = new Promise((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error(`Resource "${id}" failed to stop within ${resource.config.timeout}ms`)), resource.config.timeout)
+      })
+
       await Promise.race([
         resource.config.stop(resource.instance),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error(`Resource "${id}" failed to stop within ${resource.config.timeout}ms`)), resource.config.timeout)
-        )
-      ])
+        timeoutPromise,
+      ]).finally(() => clearTimeout(timeoutId))
+
       resource.state = ProcessState.STOPPED
     } catch (error) {
       resource.state = ProcessState.FAILED
