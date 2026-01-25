@@ -2,8 +2,6 @@ import { ProcessState, ProcessSupervisor } from '..'
 
 describe('Lifecycle methods', () => {
 
-  const warnSpy = jest.spyOn(console, 'warn').mockImplementation()
-
   const getSupervisorWithResource = ({
     initialState = ProcessState.IDLE,
     mockedStart = jest.fn().mockResolvedValue(undefined),
@@ -28,6 +26,8 @@ describe('Lifecycle methods', () => {
   }
 
   describe('start', () => {
+
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation()
 
     it('throws an error if the resource is not registered', async () => {
       expect.assertions(1)
@@ -127,6 +127,8 @@ describe('Lifecycle methods', () => {
   })
 
   describe('stop', () => {
+
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation()
 
     it('throws an error if the resource is not registered', async () => {
       expect.assertions(1)
@@ -255,6 +257,88 @@ describe('Lifecycle methods', () => {
   })
 
   describe('shutdownAll', () => {
+
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation()
+
+    it('stops all registered resources', async () => {
+      expect.assertions(7)
+
+      const supervisor = new ProcessSupervisor({ defaultTimeout: 100 })
+
+      const mockedStop1 = jest.fn().mockResolvedValue(undefined)
+      const mockedStop2 = jest.fn().mockResolvedValue(undefined)
+      const mockedStop3 = jest.fn().mockResolvedValue(undefined)
+
+      supervisor.register('resource1', { start: jest.fn(), stop: mockedStop1 })
+      supervisor.register('resource2', { start: jest.fn(), stop: mockedStop2 })
+      supervisor.register('resource3', { start: jest.fn(), stop: mockedStop3 })
+
+      await supervisor.start('resource1')
+      await supervisor.start('resource2')
+      await supervisor.start('resource3')
+      await supervisor.shutdownAll()
+
+      expect(mockedStop1).toHaveBeenCalledTimes(1)
+      expect(mockedStop2).toHaveBeenCalledTimes(1)
+      expect(mockedStop3).toHaveBeenCalledTimes(1)
+      expect(supervisor.getState('resource1')).toBe(ProcessState.STOPPED)
+      expect(supervisor.getState('resource2')).toBe(ProcessState.STOPPED)
+      expect(supervisor.getState('resource3')).toBe(ProcessState.STOPPED)
+      expect(errorSpy).not.toHaveBeenCalled()
+    })
+
+    it('continues stopping other resources if one fails', async () => {
+      expect.assertions(5)
+
+      const supervisor = new ProcessSupervisor({ defaultTimeout: 100 })
+
+      const stopError = new Error('Failed to stop')
+      const mockedStop1 = jest.fn().mockRejectedValue(stopError)
+      const mockedStop2 = jest.fn().mockResolvedValue(undefined)
+
+      supervisor.register('resource1', { start: jest.fn(), stop: mockedStop1 })
+      supervisor.register('resource2', { start: jest.fn(), stop: mockedStop2 })
+
+      await supervisor.start('resource1')
+      await supervisor.start('resource2')
+      await supervisor.shutdownAll()
+
+      expect(mockedStop1).toHaveBeenCalledTimes(1)
+      expect(mockedStop2).toHaveBeenCalledTimes(1)
+      expect(supervisor.getState('resource1')).toBe(ProcessState.FAILED)
+      expect(supervisor.getState('resource2')).toBe(ProcessState.STOPPED)
+      expect(errorSpy).toHaveBeenCalledWith('Failed to stop resource "resource1":', stopError)
+    })
+
+    it('logs errors for all failed resources', async () => {
+      expect.assertions(3)
+
+      const supervisor = new ProcessSupervisor({ defaultTimeout: 100 })
+
+      const error1 = new Error('Error 1')
+      const error2 = new Error('Error 2')
+
+      supervisor.register('resource1', { start: jest.fn(), stop: jest.fn().mockRejectedValue(error1) })
+      supervisor.register('resource2', { start: jest.fn(), stop: jest.fn().mockRejectedValue(error2) })
+
+      await supervisor.start('resource1')
+      await supervisor.start('resource2')
+      await supervisor.shutdownAll()
+
+      expect(errorSpy).toHaveBeenCalledTimes(2)
+      expect(errorSpy).toHaveBeenCalledWith('Failed to stop resource "resource1":', error1)
+      expect(errorSpy).toHaveBeenCalledWith('Failed to stop resource "resource2":', error2)
+    })
+
+    it('handles an empty supervisor gracefully', async () => {
+      expect.assertions(1)
+
+      const supervisor = new ProcessSupervisor({ defaultTimeout: 100 })
+
+      await supervisor.shutdownAll()
+
+      expect(errorSpy).not.toHaveBeenCalled()
+    })
 
   })
 

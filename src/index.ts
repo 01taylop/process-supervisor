@@ -163,7 +163,18 @@ class ProcessSupervisor {
    * Stops all resources in parallel and waits for completion
    */
   async shutdownAll(): Promise<void> {
-    // TODO: Implement
+    const resourceIds = Array.from(this.resources.keys())
+
+    const stopPromises = resourceIds.map(id => this.stop(id))
+
+    const results = await Promise.allSettled(stopPromises)
+
+    results.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        const id = resourceIds[index]
+        console.error(`Failed to stop resource "${id}":`, result.reason)
+      }
+    })
   }
 
   // ==================================================
