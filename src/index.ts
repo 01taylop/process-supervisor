@@ -126,6 +126,7 @@ class ProcessSupervisor {
   async stop(id: string): Promise<void> {
     const resource = this.getResource(id)
 
+    // Validate state
     if (resource.state === ProcessState.IDLE) {
       return
     }
@@ -138,6 +139,22 @@ class ProcessSupervisor {
     if (resource.state === ProcessState.STARTING) {
       console.warn(`Resource "${id}" is still starting, cannot stop`)
       return
+    }
+
+    // Stop resource
+    try {
+      resource.state = ProcessState.STOPPING
+      await Promise.race([
+        resource.config.stop(resource.instance),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error(`Resource "${id}" failed to stop within ${resource.config.timeout}ms`)), resource.config.timeout)
+        )
+      ])
+      resource.state = ProcessState.STOPPED
+    } catch (error) {
+      resource.state = ProcessState.FAILED
+      resource.error = error instanceof Error ? error : new Error(String(error))
+      throw error
     }
   }
 
