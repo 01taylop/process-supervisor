@@ -15,6 +15,7 @@ class ProcessSupervisor {
   private readonly defaultTimeout: number
 
   private resources: Map<string, ManagedResource<any>> = new Map()
+  private signalsHandled: boolean = false
 
   constructor(options: ProcessSupervisorOptions = {}) {
     this.defaultTimeout = options.defaultTimeout ?? 5000
@@ -166,20 +167,49 @@ class ProcessSupervisor {
   /**
    * Stop all managed resources
    * Stops all resources in parallel and waits for completion
+   *
+   * @returns true if any errors occurred during shutdown
    */
-  async shutdownAll(): Promise<void> {
+  async shutdownAll(): Promise<boolean> {
     const resourceIds = Array.from(this.resources.keys())
 
     const stopPromises = resourceIds.map(id => this.stop(id))
 
     const results = await Promise.allSettled(stopPromises)
 
+    let hasErrors = false
     results.forEach((result, index) => {
       if (result.status === 'rejected') {
+        hasErrors = true
         const id = resourceIds[index]
         console.error(`Failed to stop resource "${id}":`, result.reason)
       }
     })
+
+    return hasErrors
+  }
+
+  /**
+   * Set up signal handlers for graceful shutdown
+   * Calls shutdownAll() when signals are received, then exits
+   *
+   * @param signals - Array of signals to handle (default: ['SIGINT', 'SIGTERM'])
+   */
+  handleSignals(signals: NodeJS.Signals[] = ['SIGINT', 'SIGTERM']): void {
+    if (this.signalsHandled) {
+      console.warn('Signal handlers already registered')
+      return
+    }
+
+    signals.forEach(signal => {
+      process.on(signal, async () => {
+        console.log(`\nReceived ${signal}, shutting down gracefully...`)
+        const hasErrors = await this.shutdownAll()
+        process.exit(hasErrors ? 1 : 0)
+      })
+    })
+
+    this.signalsHandled = true
   }
 
   // ==================================================
