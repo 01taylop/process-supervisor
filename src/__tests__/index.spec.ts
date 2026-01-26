@@ -15,7 +15,16 @@ describe('ProcessState', () => {
 
 describe('ProcessSupervisor', () => {
 
+  afterEach(() => {
+    process.removeAllListeners('SIGINT')
+    process.removeAllListeners('SIGTERM')
+    process.removeAllListeners('uncaughtException')
+    process.removeAllListeners('unhandledRejection')
+  })
+
   describe('constructor', () => {
+
+    const processOnSpy = jest.spyOn(process, 'on')
 
     it('creates an instance with default options', () => {
       const supervisor = new ProcessSupervisor()
@@ -29,6 +38,50 @@ describe('ProcessSupervisor', () => {
 
       expect(supervisor).toBeInstanceOf(ProcessSupervisor)
       expect(supervisor.size).toBe(0)
+    })
+
+    it('registers signal handlers by default', () => {
+      new ProcessSupervisor()
+
+      expect(processOnSpy).toHaveBeenCalledTimes(4)
+      expect(processOnSpy).toHaveBeenCalledWith('SIGINT', expect.any(Function))
+      expect(processOnSpy).toHaveBeenCalledWith('SIGTERM', expect.any(Function))
+      expect(processOnSpy).toHaveBeenCalledWith('uncaughtException', expect.any(Function))
+      expect(processOnSpy).toHaveBeenCalledWith('unhandledRejection', expect.any(Function))
+    })
+
+    it('allows disabling signal handlers', () => {
+      new ProcessSupervisor({ handleSignals: false })
+
+      expect(processOnSpy).toHaveBeenCalledTimes(2)
+      expect(processOnSpy).not.toHaveBeenCalledWith('SIGINT', expect.any(Function))
+      expect(processOnSpy).not.toHaveBeenCalledWith('SIGTERM', expect.any(Function))
+    })
+
+    it('allows custom signals', () => {
+      new ProcessSupervisor({ handleSignals: ['SIGINT', 'SIGTERM', 'SIGUSR1'] })
+
+      expect(processOnSpy).toHaveBeenCalledTimes(5)
+      expect(processOnSpy).toHaveBeenCalledWith('SIGINT', expect.any(Function))
+      expect(processOnSpy).toHaveBeenCalledWith('SIGTERM', expect.any(Function))
+      expect(processOnSpy).toHaveBeenCalledWith('SIGUSR1', expect.any(Function))
+    })
+
+    it('allows disabling uncaught error handlers', () => {
+      new ProcessSupervisor({ handleUncaughtErrors: false })
+
+      expect(processOnSpy).toHaveBeenCalledTimes(2)
+      expect(processOnSpy).not.toHaveBeenCalledWith('uncaughtException', expect.any(Function))
+      expect(processOnSpy).not.toHaveBeenCalledWith('unhandledRejection', expect.any(Function))
+    })
+
+    it('allows disabling all automatic handlers', () => {
+      new ProcessSupervisor({
+        handleSignals: false,
+        handleUncaughtErrors: false,
+      })
+
+      expect(processOnSpy).toHaveBeenCalledTimes(0)
     })
 
   })

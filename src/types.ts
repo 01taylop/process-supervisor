@@ -59,6 +59,22 @@ interface ProcessSupervisorOptions {
    * @default 5000
    */
   defaultTimeout?: number
+
+  /**
+   * Handle process signals for graceful shutdown
+   * - `true`: Handle SIGINT and SIGTERM
+   * - `false`: Disable automatic signal handling
+   * - Array: Handle specific signals (e.g., `['SIGINT', 'SIGTERM', 'SIGUSR2']`)
+   * @default true
+   */
+  handleSignals?: NodeJS.Signals[] | boolean
+
+  /**
+   * Handle uncaught errors for graceful shutdown
+   * Automatically calls shutdownAll() when uncaughtException or unhandledRejection occurs
+   * @default true
+   */
+  handleUncaughtErrors?: boolean
 }
 
 // ==================================================
