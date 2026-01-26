@@ -25,6 +25,13 @@ describe('Lifecycle methods', () => {
     }
   }
 
+  afterEach(() => {
+    process.removeAllListeners('SIGINT')
+    process.removeAllListeners('SIGTERM')
+    process.removeAllListeners('uncaughtException')
+    process.removeAllListeners('unhandledRejection')
+  })
+
   describe('start', () => {
 
     const warnSpy = jest.spyOn(console, 'warn').mockImplementation()
@@ -61,7 +68,7 @@ describe('Lifecycle methods', () => {
       ProcessState.IDLE,
       ProcessState.STOPPED,
       ProcessState.FAILED,
-    ])('transitions the state from %s to STARTING to RUNNING', async initialState => {
+    ])('transitions the state from %s to starting to running', async initialState => {
       expect.assertions(4)
 
       const { mockedStart, supervisor } = getSupervisorWithResource({ initialState })
@@ -140,7 +147,7 @@ describe('Lifecycle methods', () => {
       )
     })
 
-    it('returns early if the resource state is IDLE', async () => {
+    it('returns early if the resource state is idle', async () => {
       expect.assertions(3)
 
       const { mockedStop, supervisor } = getSupervisorWithResource()
@@ -174,7 +181,7 @@ describe('Lifecycle methods', () => {
     test.each([
       ProcessState.RUNNING,
       ProcessState.FAILED,
-    ])('transitions the state from %s to STOPPING to STOPPED', async initialState => {
+    ])('transitions the state from %s to stopping to stopped', async initialState => {
       expect.assertions(4)
 
       const { mockedStop, supervisor } = getSupervisorWithResource({ initialState })
@@ -209,7 +216,7 @@ describe('Lifecycle methods', () => {
       expect(mockedStop).toHaveBeenCalledWith(mockInstance)
     })
 
-    it('transitions to FAILED if stop() throws an error', async () => {
+    it('transitions to failed if stop() throws an error', async () => {
       expect.assertions(3)
 
       const stopError = new Error('Failed to kill process')
@@ -239,7 +246,7 @@ describe('Lifecycle methods', () => {
       expect(resource.error?.message).toBe('string error')
     })
 
-    it('transitions to FAILED if stop() times out', async () => {
+    it('transitions to failed if stop() times out', async () => {
       expect.assertions(4)
 
       const { resource, supervisor } = getSupervisorWithResource({
@@ -261,7 +268,7 @@ describe('Lifecycle methods', () => {
     const errorSpy = jest.spyOn(console, 'error').mockImplementation()
 
     it('stops all registered resources', async () => {
-      expect.assertions(7)
+      expect.assertions(8)
 
       const supervisor = new ProcessSupervisor({ defaultTimeout: 100 })
 
@@ -276,7 +283,7 @@ describe('Lifecycle methods', () => {
       await supervisor.start('resource1')
       await supervisor.start('resource2')
       await supervisor.start('resource3')
-      await supervisor.shutdownAll()
+      const hasErrors = await supervisor.shutdownAll()
 
       expect(mockedStop1).toHaveBeenCalledTimes(1)
       expect(mockedStop2).toHaveBeenCalledTimes(1)
@@ -285,10 +292,11 @@ describe('Lifecycle methods', () => {
       expect(supervisor.getState('resource2')).toBe(ProcessState.STOPPED)
       expect(supervisor.getState('resource3')).toBe(ProcessState.STOPPED)
       expect(errorSpy).not.toHaveBeenCalled()
+      expect(hasErrors).toBe(false)
     })
 
     it('continues stopping other resources if one fails', async () => {
-      expect.assertions(5)
+      expect.assertions(6)
 
       const supervisor = new ProcessSupervisor({ defaultTimeout: 100 })
 
@@ -301,17 +309,18 @@ describe('Lifecycle methods', () => {
 
       await supervisor.start('resource1')
       await supervisor.start('resource2')
-      await supervisor.shutdownAll()
+      const hasErrors = await supervisor.shutdownAll()
 
       expect(mockedStop1).toHaveBeenCalledTimes(1)
       expect(mockedStop2).toHaveBeenCalledTimes(1)
       expect(supervisor.getState('resource1')).toBe(ProcessState.FAILED)
       expect(supervisor.getState('resource2')).toBe(ProcessState.STOPPED)
       expect(errorSpy).toHaveBeenCalledWith('Failed to stop resource "resource1":', stopError)
+      expect(hasErrors).toBe(true)
     })
 
     it('logs errors for all failed resources', async () => {
-      expect.assertions(3)
+      expect.assertions(4)
 
       const supervisor = new ProcessSupervisor({ defaultTimeout: 100 })
 
@@ -323,21 +332,23 @@ describe('Lifecycle methods', () => {
 
       await supervisor.start('resource1')
       await supervisor.start('resource2')
-      await supervisor.shutdownAll()
+      const hasErrors = await supervisor.shutdownAll()
 
       expect(errorSpy).toHaveBeenCalledTimes(2)
       expect(errorSpy).toHaveBeenCalledWith('Failed to stop resource "resource1":', error1)
       expect(errorSpy).toHaveBeenCalledWith('Failed to stop resource "resource2":', error2)
+      expect(hasErrors).toBe(true)
     })
 
     it('handles an empty supervisor gracefully', async () => {
-      expect.assertions(1)
+      expect.assertions(2)
 
       const supervisor = new ProcessSupervisor({ defaultTimeout: 100 })
 
-      await supervisor.shutdownAll()
+      const hasErrors = await supervisor.shutdownAll()
 
       expect(errorSpy).not.toHaveBeenCalled()
+      expect(hasErrors).toBe(false)
     })
 
   })

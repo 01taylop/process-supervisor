@@ -14,10 +14,22 @@ class ProcessSupervisor {
 
   private readonly defaultTimeout: number
 
+  private isShuttingDown = false
   private resources: Map<string, ManagedResource<any>> = new Map()
 
   constructor(options: ProcessSupervisorOptions = {}) {
     this.defaultTimeout = options.defaultTimeout ?? 5000
+
+    if (options.handleSignals !== false) {
+      const signals: NodeJS.Signals[] = Array.isArray(options.handleSignals)
+        ? options.handleSignals
+        : ['SIGINT', 'SIGTERM']
+      this.handleSignals(signals)
+    }
+
+    if (options.handleUncaughtErrors !== false) {
+      this.handleUncaughtErrors()
+    }
   }
 
   /**
@@ -166,20 +178,26 @@ class ProcessSupervisor {
   /**
    * Stop all managed resources
    * Stops all resources in parallel and waits for completion
+   *
+   * @returns true if any errors occurred during shutdown
    */
-  async shutdownAll(): Promise<void> {
+  async shutdownAll(): Promise<boolean> {
     const resourceIds = Array.from(this.resources.keys())
 
     const stopPromises = resourceIds.map(id => this.stop(id))
 
     const results = await Promise.allSettled(stopPromises)
 
+    let hasErrors = false
     results.forEach((result, index) => {
       if (result.status === 'rejected') {
+        hasErrors = true
         const id = resourceIds[index]
         console.error(`Failed to stop resource "${id}":`, result.reason)
       }
     })
+
+    return hasErrors
   }
 
   // ==================================================
@@ -192,6 +210,35 @@ class ProcessSupervisor {
       throw new Error(`Resource with id "${id}" is not registered`)
     }
     return resource
+  }
+
+  private handleSignals(signals: NodeJS.Signals[]): void {
+    signals.forEach(signal => {
+      process.on(signal, async () => {
+        if (this.isShuttingDown) {
+          return
+        }
+        this.isShuttingDown = true
+
+        console.log(`\nReceived ${signal}, shutting down gracefully...`)
+        const hasErrors = await this.shutdownAll()
+        process.exit(hasErrors ? 1 : 0)
+      })
+    })
+  }
+
+  private handleUncaughtErrors(): void {
+    process.on('uncaughtException', async error => {
+      console.error('Unexpected error:', error)
+      await this.shutdownAll()
+      process.exit(1)
+    })
+
+    process.on('unhandledRejection', async error => {
+      console.error('Unhandled promise:', error)
+      await this.shutdownAll()
+      process.exit(1)
+    })
   }
 
 }
