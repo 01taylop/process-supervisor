@@ -14,6 +14,7 @@ class ProcessSupervisor {
 
   private readonly defaultTimeout: number
 
+  private isShuttingDown = false
   private resources: Map<string, ManagedResource<any>> = new Map()
 
   constructor(options: ProcessSupervisorOptions = {}) {
@@ -214,6 +215,11 @@ class ProcessSupervisor {
   private handleSignals(signals: NodeJS.Signals[]): void {
     signals.forEach(signal => {
       process.on(signal, async () => {
+        if (this.isShuttingDown) {
+          return
+        }
+        this.isShuttingDown = true
+
         console.log(`\nReceived ${signal}, shutting down gracefully...`)
         const hasErrors = await this.shutdownAll()
         process.exit(hasErrors ? 1 : 0)

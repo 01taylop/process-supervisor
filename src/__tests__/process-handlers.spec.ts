@@ -100,6 +100,31 @@ describe('Process handlers', () => {
     expect(exitSpy).toHaveBeenCalledWith(0)
   })
 
+  it('ignores subsequent signals during shutdown', async () => {
+    expect.assertions(3)
+
+    const supervisor = new ProcessSupervisor({
+      handleSignals: ['SIGINT'],
+      handleUncaughtErrors: false,
+    })
+
+    const mockedStop = jest.fn().mockResolvedValue(undefined)
+    supervisor.register('test', {
+      start: () => ({ mock: true }),
+      stop: mockedStop,
+    })
+
+    await supervisor.start('test')
+
+    const handler = processOnSpy.mock.calls[0][1]
+    await handler()
+    await handler()
+
+    expect(logSpy).toHaveBeenCalledTimes(1)
+    expect(mockedStop).toHaveBeenCalledTimes(1)
+    expect(exitSpy).toHaveBeenCalledTimes(1)
+  })
+
   test.each([
     ['uncaughtException', 'Unexpected error:'],
     ['unhandledRejection', 'Unhandled promise:'],
