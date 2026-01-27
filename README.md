@@ -16,6 +16,10 @@ A lightweight Node.js utility for managing the lifecycle of multiple resources w
     - [Constructor Options](#constructor-options)
     - [Methods](#methods)
     - [Resource Configuration](#resource-configuration)
+- [Advanced Usage](#advanced-usage)
+  - [Manual Shutdown Control](#manual-shutdown-control)
+  - [Custom Signal Handling](#custom-signal-handling)
+  - [Custom Error Handling](#custom-error-handling)
 
 ## Motivation
 
@@ -190,4 +194,70 @@ start: () => spawn('command')
 
 // ❌ Wrong
 start: spawn('command')
+```
+
+## Advanced Usage
+
+### Manual Shutdown Control
+
+By default, the supervisor handles shutdown automatically. But you can also trigger shutdown manually:
+
+```typescript
+// Stop a specific resource
+await supervisor.stop('server')
+
+// Stop all resources
+await supervisor.shutdownAll()
+```
+
+This is useful when you need shutdown logic in custom signal handlers or specific error scenarios.
+
+### Custom Signal Handling
+
+Disable automatic signal handling when you need custom behaviour:
+
+```typescript
+const supervisor = new ProcessSupervisor({
+  handleSignals: false  // Disable automatic SIGINT/SIGTERM handling
+})
+
+// Now you control signal behaviour
+process.on('SIGINT', async () => {
+  console.log('Gracefully shutting down...')
+  await supervisor.shutdownAll()
+  process.exit(0)
+})
+```
+
+Or handle specific signals only:
+
+```typescript
+const supervisor = new ProcessSupervisor({
+  handleSignals: ['SIGTERM']  // Only handle SIGTERM, not SIGINT
+})
+```
+
+### Custom Error Handling
+
+Disable automatic error handling when you need custom crash behaviour:
+
+```typescript
+const supervisor = new ProcessSupervisor({
+  handleUncaughtErrors: false  // Disable automatic error handling
+})
+
+// Now you control error behaviour
+process.on('uncaughtException', async error => {
+  console.error('Unexpected error:', error)
+  await reportToSentry(error)
+  await supervisor.shutdownAll()
+  process.exit(1)
+})
+
+process.on('unhandledRejection', async error => {
+  console.error('Unhandled promise:', error)
+  await reportToSentry(error)
+  await supervisor.shutdownAll()
+  process.exit(1)
+})
 ```
