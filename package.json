@@ -1,6 +1,6 @@
 {
   "name": "process-supervisor",
-  "description": "A small Node.js utility for supervising child process lifecycles with explicit state and graceful shutdown.",
+  "description": "A lightweight Node.js utility for managing the lifecycle of multiple resources with automatic graceful shutdown.",
   "version": "0.0.0",
   "repository": {
     "type": "git",
