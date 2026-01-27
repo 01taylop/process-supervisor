@@ -7,7 +7,7 @@ import type {
 } from './types'
 
 /**
- * Supervises the lifecycle of multiple managed resources
+ * Supervises the lifecycle of multiple resources
  * Provides centralised state tracking and coordinated shutdown
  */
 class ProcessSupervisor {
@@ -35,7 +35,7 @@ class ProcessSupervisor {
   }
 
   /**
-   * Register a new managed resource with the supervisor
+   * Register a new resource with the supervisor
    *
    * @param id - Unique identifier for this resource
    * @param config - Configuration defining how to start and stop the resource
@@ -60,7 +60,7 @@ class ProcessSupervisor {
   }
 
   /**
-   * Unregister a managed resource from the supervisor
+   * Unregister a resource from the supervisor
    * Automatically stops the resource if it is running
    *
    * @param id - The resource identifier
@@ -77,7 +77,7 @@ class ProcessSupervisor {
   }
 
   /**
-   * Get the instance of a managed resource
+   * Get the instance of a resource
    *
    * @param id - The resource identifier
    * @returns The resource instance, or null if the resource has never been started
@@ -90,7 +90,7 @@ class ProcessSupervisor {
   }
 
   /**
-   * Get the current state of a managed resource
+   * Get the current state of a resource
    *
    * @param id - The resource identifier
    * @returns The current ProcessState, or undefined if not found
@@ -100,7 +100,7 @@ class ProcessSupervisor {
   }
 
   /**
-   * Get the current state of all managed resources
+   * Get the current state of all resources
    *
    * @returns A readonly map of resource ids to their current states
    */
@@ -130,7 +130,7 @@ class ProcessSupervisor {
   }
 
   /**
-   * Start a managed resource
+   * Start a resource
    *
    * @param id - The resource identifier
    * @throws Error if the resource is not found
@@ -162,7 +162,8 @@ class ProcessSupervisor {
   }
 
   /**
-   * Stop a managed resource
+   * Stop a running resource
+   * Enforces timeout configured on the resource
    *
    * @param id - The resource identifier
    * @throws Error if the resource is not found
@@ -208,8 +209,7 @@ class ProcessSupervisor {
   }
 
   /**
-   * Stop all managed resources
-   * Stops all resources in parallel and waits for completion
+   * Stop all resources in parallel
    *
    * @returns true if any errors occurred during shutdown
    */

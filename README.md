@@ -9,6 +9,13 @@ A lightweight Node.js utility for managing the lifecycle of multiple resources w
 - [Motivation](#motivation)
 - [Example](#example)
   - [Common Use Cases](#common-use-cases)
+- [Usage](#usage)
+  - [Installation](#installation)
+  - [Importing](#importing)
+  - [API](#api)
+    - [Constructor Options](#constructor-options)
+    - [Methods](#methods)
+    - [Resource Configuration](#resource-configuration)
 
 ## Motivation
 
@@ -83,4 +90,104 @@ supervisor.register('webpack', {
   },
   stop: async server => await server.stop()
 })
+```
+
+## Usage
+
+### Installation
+
+Install the package as a dependency:
+
+```bash
+# Using npm
+npm install process-supervisor
+
+# Using yarn
+yarn add process-supervisor
+```
+
+### Importing
+
+You can import `ProcessSupervisor` using either CommonJS or ES Modules:
+
+```js
+// Using CommonJS
+const { ProcessSupervisor } = require('process-supervisor')
+
+// Using ES Modules
+import { ProcessSupervisor } from 'process-supervisor'
+```
+
+### API
+
+#### Constructor Options
+
+```typescript
+new ProcessSupervisor(options?)
+```
+
+| Property               | Type                        | Required | Default | Description                                                                                     |
+|------------------------|---------------------------- |----------|---------|-------------------------------------------------------------------------------------------------|
+| `defaultTimeout`       | number                      | -        | `5000`  | Default timeout in milliseconds for stopping resources.                                         |
+| `handleSignals`        | boolean \| NodeJS.Signals[] | -        | `true`  | Automatically handle process signals. Pass `true` for SIGINT/SIGTERM, array for custom signals. |
+| `handleUncaughtErrors` | boolean                     | -        | `true`  | Automatically handle uncaught exceptions and unhandled promise rejections.                      |
+
+#### Methods
+
+**`register<T>(id: string, config: ManagedResourceConfig<T>): void`**
+
+Register a new resource with the supervisor.
+
+**`start(id: string): Promise<void>`**
+
+Start a resource.
+
+**`stop(id: string): Promise<void>`**
+
+Stop a running resource. Enforces timeout configured on the resource.
+
+**`shutdownAll(): Promise<boolean>`**
+
+Stop all resources in parallel. Returns `true` if any errors occurred.
+
+**`getState(id: string): ProcessState | undefined`**
+
+Get the current state of a resource. States: `IDLE`, `STARTING`, `RUNNING`, `STOPPING`, `STOPPED`, `FAILED`.
+
+**`getAllStates(): ReadonlyMap<string, ProcessState>`**
+
+Get the current state of all resources.
+
+**`has(id: string): boolean`**
+
+Check if a resource is registered.
+
+**`size: number`**
+
+Get the total number of registered resources.
+
+#### Resource Configuration
+
+```typescript
+interface ManagedResourceConfig<T> {
+  start: () => T | Promise<T>
+  stop: (instance: T) => void | Promise<void>
+  timeout?: number
+}
+```
+
+| Property  | Type                                    | Required | Description                                                                              |
+|-----------|-----------------------------------------|----------|------------------------------------------------------------------------------------------|
+| `start`   | () => T \| Promise\<T>                  | ✅       | Function that creates and returns the resource instance.                                 |
+| `stop`    | (instance: T) => void \| Promise\<void> | ✅       | Function that cleans up the resource. Receives the running instance.                     |
+| `timeout` | number                                  | -        | Maximum time in milliseconds to wait for stop to complete. Defaults to `defaultTimeout`. |
+
+**Important:** The `start` function must return a function that creates the resource, not the resource itself:
+
+```typescript
+// ✅ Correct
+start: () => spawn('command')
+
+// ❌ Wrong
+start: spawn('command')
 ```

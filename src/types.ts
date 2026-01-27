@@ -67,7 +67,7 @@ interface ProcessSupervisorOptions {
    * - Array: Handle specific signals (e.g., `['SIGINT', 'SIGTERM', 'SIGUSR2']`)
    * @default true
    */
-  handleSignals?: NodeJS.Signals[] | boolean
+  handleSignals?: boolean | NodeJS.Signals[]
 
   /**
    * Handle uncaught errors for graceful shutdown
