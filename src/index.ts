@@ -58,6 +58,23 @@ class ProcessSupervisor {
   }
 
   /**
+   * Unregister a managed resource from the supervisor
+   * Automatically stops the resource if it is running
+   *
+   * @param id - The resource identifier
+   * @throws Error if the resource is not found
+   */
+  async unregister(id: string): Promise<void> {
+    const resource = this.getResource(id)
+
+    if (resource.state === ProcessState.RUNNING) {
+      await this.stop(id)
+    }
+
+    this.resources.delete(id)
+  }
+
+  /**
    * Get the current state of a managed resource
    *
    * @param id - The resource identifier

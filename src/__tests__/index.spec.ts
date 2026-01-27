@@ -91,38 +91,38 @@ describe('ProcessSupervisor', () => {
     it('registers a new resource', () => {
       const supervisor = new ProcessSupervisor()
 
-      supervisor.register('test-resource', {
+      supervisor.register('test', {
         start: jest.fn(),
         stop: jest.fn(),
       })
 
-      expect(supervisor.has('test-resource')).toBe(true)
+      expect(supervisor.has('test')).toBe(true)
       expect(supervisor.size).toBe(1)
     })
 
     it('registers a resource with a custom timeout', () => {
       const supervisor = new ProcessSupervisor()
 
-      supervisor.register('test-resource', {
+      supervisor.register('test', {
         start: jest.fn(),
         stop: jest.fn(),
         timeout: 3_000,
       })
 
-      expect(supervisor.has('test-resource')).toBe(true)
+      expect(supervisor.has('test')).toBe(true)
       expect(supervisor.size).toBe(1)
     })
 
     it('sets the initial state to IDLE', () => {
       const supervisor = new ProcessSupervisor()
 
-      supervisor.register('test-resource', {
+      supervisor.register('test', {
         start: jest.fn(),
         stop: jest.fn(),
       })
 
-      expect(supervisor.has('test-resource')).toBe(true)
-      expect(supervisor.getState('test-resource')).toBe(ProcessState.IDLE)
+      expect(supervisor.has('test')).toBe(true)
+      expect(supervisor.getState('test')).toBe(ProcessState.IDLE)
     })
 
     it('throws an error when registering a duplicate id', () => {
@@ -156,6 +156,64 @@ describe('ProcessSupervisor', () => {
       expect(supervisor.has('resource-2')).toBe(true)
       expect(supervisor.has('resource-3')).toBe(true)
       expect(supervisor.size).toBe(3)
+    })
+
+  })
+
+  describe('unregister', () => {
+
+    it('throws an error if the resource is not registered', async () => {
+      expect.assertions(1)
+
+      const supervisor = new ProcessSupervisor()
+
+      await expect(supervisor.unregister('test')).rejects.toThrow(
+        'Resource with id "test" is not registered'
+      )
+    })
+
+    it('unregisters an existing resource', async () => {
+      expect.assertions(5)
+
+      const stopMock = jest.fn()
+
+      const supervisor = new ProcessSupervisor()
+
+      supervisor.register('test', {
+        start: jest.fn(),
+        stop: stopMock,
+      })
+
+      expect(supervisor.has('test')).toBe(true)
+      expect(supervisor.size).toBe(1)
+
+      await supervisor.unregister('test')
+
+      expect(supervisor.has('test')).toBe(false)
+      expect(supervisor.size).toBe(0)
+      expect(stopMock).not.toHaveBeenCalled()
+    })
+
+    it('stops the resource if it is running before unregistering', async () => {
+      expect.assertions(3)
+
+      const stopMock = jest.fn().mockResolvedValue(undefined)
+
+      const supervisor = new ProcessSupervisor()
+
+      supervisor.register('test', {
+        start: jest.fn(),
+        stop: stopMock,
+      })
+
+      await supervisor.start('test')
+
+      expect(supervisor.getState('test')).toBe(ProcessState.RUNNING)
+
+      await supervisor.unregister('test')
+
+      expect(stopMock).toHaveBeenCalledTimes(1)
+      expect(supervisor.has('test')).toBe(false)
     })
 
   })
