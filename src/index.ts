@@ -13,12 +13,14 @@ import type {
 class ProcessSupervisor {
 
   private readonly defaultTimeout: number
+  private readonly options: ProcessSupervisorOptions
 
   private isShuttingDown = false
   private resources: Map<string, ManagedResource<any>> = new Map()
 
   constructor(options: ProcessSupervisorOptions = {}) {
     this.defaultTimeout = options.defaultTimeout ?? 5000
+    this.options = options
 
     if (options.handleSignals !== false) {
       const signals: NodeJS.Signals[] = Array.isArray(options.handleSignals)
@@ -250,6 +252,10 @@ class ProcessSupervisor {
         }
         this.isShuttingDown = true
 
+        if (this.options.onSignal) {
+          await this.options.onSignal(signal)
+        }
+
         console.log(`\nReceived ${signal}, shutting down gracefully...`)
         const hasErrors = await this.shutdownAll()
         process.exit(hasErrors ? 1 : 0)
@@ -260,12 +266,22 @@ class ProcessSupervisor {
   private handleUncaughtErrors(): void {
     process.on('uncaughtException', async error => {
       console.error('Unexpected error:', error)
+
+      if (this.options.onError) {
+        await this.options.onError(error)
+      }
+
       await this.shutdownAll()
       process.exit(1)
     })
 
     process.on('unhandledRejection', async error => {
       console.error('Unhandled promise:', error)
+
+      if (this.options.onError) {
+        await this.options.onError(error)
+      }
+
       await this.shutdownAll()
       process.exit(1)
     })
