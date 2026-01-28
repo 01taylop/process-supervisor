@@ -13,12 +13,14 @@ import type {
 class ProcessSupervisor {
 
   private readonly defaultTimeout: number
+  private readonly options: ProcessSupervisorOptions
 
   private isShuttingDown = false
   private resources: Map<string, ManagedResource<any>> = new Map()
 
   constructor(options: ProcessSupervisorOptions = {}) {
     this.defaultTimeout = options.defaultTimeout ?? 5000
+    this.options = options
 
     if (options.handleSignals !== false) {
       const signals: NodeJS.Signals[] = Array.isArray(options.handleSignals)
@@ -250,6 +252,14 @@ class ProcessSupervisor {
         }
         this.isShuttingDown = true
 
+        if (this.options.onSignal) {
+          try {
+            await this.options.onSignal(signal)
+          } catch (signalError) {
+            console.error('Error in onSignal hook:', signalError)
+          }
+        }
+
         console.log(`\nReceived ${signal}, shutting down gracefully...`)
         const hasErrors = await this.shutdownAll()
         process.exit(hasErrors ? 1 : 0)
@@ -258,16 +268,29 @@ class ProcessSupervisor {
   }
 
   private handleUncaughtErrors(): void {
-    process.on('uncaughtException', async error => {
-      console.error('Unexpected error:', error)
-      await this.shutdownAll()
-      process.exit(1)
-    })
+    const errorConfig = [{
+      event: 'uncaughtException',
+      logPrefix: 'Unexpected error:'
+    }, {
+      event: 'unhandledRejection',
+      logPrefix: 'Unhandled promise:'
+    }]
 
-    process.on('unhandledRejection', async error => {
-      console.error('Unhandled promise:', error)
-      await this.shutdownAll()
-      process.exit(1)
+    errorConfig.forEach(({ event, logPrefix }) => {
+      process.on(event, async error => {
+        console.error(logPrefix, error)
+
+        if (this.options.onError) {
+          try {
+            await this.options.onError(error)
+          } catch (hookError) {
+            console.error('Error in onError hook:', hookError)
+          }
+        }
+
+        await this.shutdownAll()
+        process.exit(1)
+      })
     })
   }
 
