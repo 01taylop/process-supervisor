@@ -22,6 +22,13 @@ describe.each([
     }
   }
 
+  afterEach(() => {
+    process.removeAllListeners('SIGINT')
+    process.removeAllListeners('SIGTERM')
+    process.removeAllListeners('uncaughtException')
+    process.removeAllListeners('unhandledRejection')
+  })
+
   test('starting and stopping a child process', async () => {
     expect.assertions(4)
 
@@ -156,6 +163,24 @@ describe.each([
     // Cleanup: kill the hanging process
     const resource = (supervisor as any).resources.get('hang')
     resource.instance.kill('SIGKILL')
+  })
+
+  test('getInstance returns real child process instance', async () => {
+    expect.assertions(4)
+
+    const supervisor = new ProcessSupervisor()
+
+    supervisor.register('sleep', SLEEP_PROCESS)
+
+    await supervisor.start('sleep')
+    const instance = supervisor.getInstance('sleep')
+
+    expect(instance).toBeTruthy()
+    expect(instance?.pid).toBeGreaterThan(0)
+    expect(instance?.killed).toBe(false)
+
+    await supervisor.stop('sleep')
+    expect(instance?.killed).toBe(true)
   })
 
 })
