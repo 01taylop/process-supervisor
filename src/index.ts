@@ -75,6 +75,19 @@ class ProcessSupervisor {
   }
 
   /**
+   * Get the instance of a managed resource
+   *
+   * @param id - The resource identifier
+   * @returns The resource instance, or null if the resource has never been started
+   * @throws Error if the resource is not found
+   */
+  getInstance<T>(id: string): T | null {
+    const resource = this.getResource(id)
+
+    return (resource.instance as T) ?? null
+  }
+
+  /**
    * Get the current state of a managed resource
    *
    * @param id - The resource identifier

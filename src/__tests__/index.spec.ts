@@ -218,6 +218,62 @@ describe('ProcessSupervisor', () => {
 
   })
 
+  describe('getInstance', () => {
+
+    it('throws an error if the resource is not registered', () => {
+      const supervisor = new ProcessSupervisor()
+
+      expect(() => supervisor.getInstance('test')).toThrow(
+        'Resource with id "test" is not registered'
+      )
+    })
+
+    it('returns null for a resource that has never been started', () => {
+      const supervisor = new ProcessSupervisor()
+
+      supervisor.register('test', {
+        start: jest.fn(),
+        stop: jest.fn(),
+      })
+
+      expect(supervisor.getInstance('test')).toBeNull()
+    })
+
+    it('returns the instance for a running resource', async () => {
+      expect.assertions(1)
+
+      const mockInstance = { foo: 'bar' }
+      const supervisor = new ProcessSupervisor()
+
+      supervisor.register('test', {
+        start: jest.fn().mockResolvedValue(mockInstance),
+        stop: jest.fn(),
+      })
+
+      await supervisor.start('test')
+
+      expect(supervisor.getInstance('test')).toBe(mockInstance)
+    })
+
+    it('returns the instance for a stopped resource', async () => {
+      expect.assertions(1)
+
+      const mockInstance = { foo: 'bar' }
+      const supervisor = new ProcessSupervisor()
+
+      supervisor.register('test', {
+        start: jest.fn().mockResolvedValue(mockInstance),
+        stop: jest.fn().mockResolvedValue(undefined),
+      })
+
+      await supervisor.start('test')
+      await supervisor.stop('test')
+
+      expect(supervisor.getInstance('test')).toBe(mockInstance)
+    })
+
+  })
+
   describe('getState', () => {
 
     it('returns the current state of a resource', () => {
