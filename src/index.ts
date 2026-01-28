@@ -264,26 +264,25 @@ class ProcessSupervisor {
   }
 
   private handleUncaughtErrors(): void {
-    process.on('uncaughtException', async error => {
-      console.error('Unexpected error:', error)
+    const errorConfig = [{
+      event: 'uncaughtException',
+      logPrefix: 'Unexpected error:'
+    }, {
+      event: 'unhandledRejection',
+      logPrefix: 'Unhandled promise:'
+    }]
 
-      if (this.options.onError) {
-        await this.options.onError(error)
-      }
+    errorConfig.forEach(({ event, logPrefix }) => {
+      process.on(event, async error => {
+        console.error(logPrefix, error)
 
-      await this.shutdownAll()
-      process.exit(1)
-    })
+        if (this.options.onError) {
+          await this.options.onError(error)
+        }
 
-    process.on('unhandledRejection', async error => {
-      console.error('Unhandled promise:', error)
-
-      if (this.options.onError) {
-        await this.options.onError(error)
-      }
-
-      await this.shutdownAll()
-      process.exit(1)
+        await this.shutdownAll()
+        process.exit(1)
+      })
     })
   }
 
