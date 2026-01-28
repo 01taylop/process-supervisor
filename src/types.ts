@@ -3,7 +3,7 @@
 // ==================================================
 
 /**
- * Represents the lifecycle state of a managed resource
+ * Represents the lifecycle state of a resource
  */
 enum ProcessState {
   /** Resource encountered an error */
@@ -21,9 +21,9 @@ enum ProcessState {
 }
 
 /**
- * Configuration for a managed resource
+ * Configuration for a resource
  */
-interface ManagedResourceConfig<T = unknown> {
+interface ResourceConfig<T = unknown> {
   /**
    * Function to start the resource
    *
@@ -108,7 +108,7 @@ interface ProcessSupervisorOptions {
  * @internal
  */
 interface ManagedResource<T = unknown> {
-  config: Required<ManagedResourceConfig<T>>
+  config: Required<ResourceConfig<T>>
   error?: Error
   id: string
   instance: T | null
@@ -121,8 +121,8 @@ interface ManagedResource<T = unknown> {
 
 export type {
   ManagedResource,
-  ManagedResourceConfig,
   ProcessSupervisorOptions,
+  ResourceConfig,
 }
 
 export {

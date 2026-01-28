@@ -2,8 +2,8 @@ import { ProcessState } from './types'
 
 import type {
   ManagedResource,
-  ManagedResourceConfig,
   ProcessSupervisorOptions,
+  ResourceConfig,
 } from './types'
 
 /**
@@ -41,7 +41,7 @@ class ProcessSupervisor {
    * @param config - Configuration defining how to start and stop the resource
    * @throws Error if a resource with this id is already registered
    */
-  register<T>(id: string, config: ManagedResourceConfig<T>): void {
+  register<T>(id: string, config: ResourceConfig<T>): void {
     if (this.resources.has(id)) {
       throw new Error(`Resource with id "${id}" is already registered`)
     }

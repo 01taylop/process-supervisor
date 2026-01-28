@@ -138,7 +138,7 @@ new ProcessSupervisor(options?)
 
 #### Methods
 
-**`register<T>(id: string, config: ManagedResourceConfig<T>): void`**
+**`register<T>(id: string, config: ResourceConfig<T>): void`**
 
 Register a new resource with the supervisor.
 
@@ -173,7 +173,7 @@ Get the total number of registered resources.
 #### Resource Configuration
 
 ```typescript
-interface ManagedResourceConfig<T> {
+interface ResourceConfig<T> {
   start: () => T | Promise<T>
   stop: (instance: T) => void | Promise<void>
   timeout?: number
