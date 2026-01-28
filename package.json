@@ -1,7 +1,7 @@
 {
   "name": "process-supervisor",
   "description": "Automatic graceful shutdown for Node.js applications. Manage child processes, file watchers, and servers with zero boilerplate and zero dependencies.",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/01taylop/process-supervisor.git"
