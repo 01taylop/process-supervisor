@@ -20,6 +20,8 @@ A lightweight Node.js utility for managing the lifecycle of multiple resources w
   - [Manual Shutdown Control](#manual-shutdown-control)
   - [Custom Signal Handling](#custom-signal-handling)
   - [Custom Error Handling](#custom-error-handling)
+  - [Accessing Resource Instances](#accessing-resource-instances)
+  - [Changing Resource Configuration](#changing-resource-configuration)
 
 ## Motivation
 
@@ -142,6 +144,14 @@ new ProcessSupervisor(options?)
 
 Register a new resource with the supervisor.
 
+**`unregister(id: string): Promise<void>`**
+
+Unregister a resource from the supervisor. Automatically stops the resource if it is running.
+
+**`getInstance<T>(id: string): T | null`**
+
+Get the instance of a resource. Returns `null` if the resource has never been started.
+
 **`start(id: string): Promise<void>`**
 
 Start a resource.
@@ -260,4 +270,28 @@ process.on('unhandledRejection', async error => {
   await supervisor.shutdownAll()
   process.exit(1)
 })
+```
+
+### Accessing Resource Instances
+
+Use `getInstance` to access the underlying resource for advanced control:
+
+```typescript
+// Force-kill a process after timeout
+try {
+  await supervisor.stop('server')
+} catch (error) {
+  const proc = supervisor.getInstance<ChildProcess>('server')
+  proc?.kill('SIGKILL')
+}
+```
+
+### Changing Resource Configuration
+
+To change a resource's configuration, unregister and re-register it:
+
+```typescript
+await supervisor.unregister('server')
+supervisor.register('server', newConfig)
+await supervisor.start('server')
 ```
