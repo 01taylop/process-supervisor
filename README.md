@@ -4,7 +4,7 @@
 
 ![Node Versions Supported](https://img.shields.io/static/v1?label=node&message=>=18.18.0&color=blue)
 
-A lightweight Node.js utility for managing the lifecycle of multiple resources with automatic graceful shutdown. Handles child processes, file watchers, servers, and more with zero dependencies.
+Automatic graceful shutdown for Node.js applications. Manage child processes, file watchers, and servers with zero boilerplate and zero dependencies.
 
 - [Motivation](#motivation)
 - [Example](#example)
@@ -18,8 +18,9 @@ A lightweight Node.js utility for managing the lifecycle of multiple resources w
     - [Resource Configuration](#resource-configuration)
 - [Advanced Usage](#advanced-usage)
   - [Manual Shutdown Control](#manual-shutdown-control)
-  - [Custom Signal Handling](#custom-signal-handling)
+  - [Lifecycle Hooks](#lifecycle-hooks)
   - [Custom Error Handling](#custom-error-handling)
+  - [Custom Signal Handling](#custom-signal-handling)
   - [Accessing Resource Instances](#accessing-resource-instances)
   - [Changing Resource Configuration](#changing-resource-configuration)
 
@@ -45,17 +46,15 @@ supervisor.register('server', {
   stop: proc => {
     proc.kill('SIGTERM')
     return new Promise(resolve => proc.on('exit', resolve))
-  }
+  },
 })
 
 await supervisor.start('server')
 
-// That's it! The supervisor automatically:
-// - Shuts down on Ctrl+C (SIGINT)
-// - Shuts down on SIGTERM
-// - Shuts down on uncaught errors (uncaughtException and unhandledRejection)
-// - Enforces timeout (5s default)
-// - Exits with proper code (0 = success, 1 = error)
+// That's it! Automatic graceful shutdown on:
+// - Ctrl+C (SIGINT) and SIGTERM
+// - Uncaught errors (uncaughtException, unhandledRejection)
+// Plus: 5s timeout enforcement and proper exit codes
 ```
 
 ### Common Use Cases
@@ -68,7 +67,7 @@ supervisor.register('dev-server', {
   stop: proc => {
     proc.kill('SIGTERM')
     return new Promise(resolve => proc.on('exit', resolve))
-  }
+  },
 })
 ```
 
@@ -94,7 +93,7 @@ supervisor.register('webpack', {
     await server.start()
     return server
   },
-  stop: async server => await server.stop()
+  stop: async server => await server.stop(),
 })
 ```
 
@@ -132,11 +131,13 @@ import { ProcessSupervisor } from 'process-supervisor'
 new ProcessSupervisor(options?)
 ```
 
-| Property               | Type                        | Required | Default | Description                                                                                     |
-|------------------------|---------------------------- |----------|---------|-------------------------------------------------------------------------------------------------|
-| `defaultTimeout`       | number                      | -        | `5000`  | Default timeout in milliseconds for stopping resources.                                         |
-| `handleSignals`        | boolean \| NodeJS.Signals[] | -        | `true`  | Automatically handle process signals. Pass `true` for SIGINT/SIGTERM, array for custom signals. |
-| `handleUncaughtErrors` | boolean                     | -        | `true`  | Automatically handle uncaught exceptions and unhandled promise rejections.                      |
+| Property               | Type                                       | Required | Default | Description                                                                                     |
+|------------------------|--------------------------------------------|----------|---------|-------------------------------------------------------------------------------------------------|
+| `defaultTimeout`       | number                                     | -        | `5000`  | Default timeout in milliseconds for stopping resources.                                         |
+| `handleSignals`        | boolean \| NodeJS.Signals[]                | -        | `true`  | Automatically handle process signals. Pass `true` for SIGINT/SIGTERM, array for custom signals. |
+| `handleUncaughtErrors` | boolean                                    | -        | `true`  | Automatically handle uncaught exceptions and unhandled promise rejections.                      |
+| `onError`              | (error: unknown) => void \| Promise\<void> | -        | -       | Callback invoked before automatic shutdown when an uncaught error occurs.                       |
+| `onSignal`             | (signal: string) => void \| Promise\<void> | -        | -       | Callback invoked before automatic shutdown when a signal is received.                           |
 
 #### Methods
 
@@ -210,7 +211,7 @@ start: spawn('command')
 
 ### Manual Shutdown Control
 
-By default, the supervisor handles shutdown automatically. But you can also trigger shutdown manually:
+By default, the supervisor handles shutdown automatically. You can also trigger shutdown manually:
 
 ```typescript
 // Stop a specific resource
@@ -222,30 +223,31 @@ await supervisor.shutdownAll()
 
 This is useful when you need shutdown logic in custom signal handlers or specific error scenarios.
 
-### Custom Signal Handling
+### Lifecycle Hooks
 
-Disable automatic signal handling when you need custom behaviour:
+Lifecycle hooks let you run custom logic before automatic shutdown.
 
-```typescript
-const supervisor = new ProcessSupervisor({
-  handleSignals: false  // Disable automatic SIGINT/SIGTERM handling
-})
-
-// Now you control signal behaviour
-process.on('SIGINT', async () => {
-  console.log('Gracefully shutting down...')
-  await supervisor.shutdownAll()
-  process.exit(0)
-})
-```
-
-Or handle specific signals only:
+**Note:** Hooks require automatic handlers to be enabled: `onError` requires `handleUncaughtErrors` to be enabled, and `onSignal` requires `handleSignals` to be enabled. For full control over shutdown behaviour, see [Custom Error Handling](#custom-error-handling) and [Custom Signal Handling](#custom-signal-handling).
 
 ```typescript
 const supervisor = new ProcessSupervisor({
-  handleSignals: ['SIGTERM']  // Only handle SIGTERM, not SIGINT
+  onError: async error => {
+    await reportToSentry(error)
+  },
+  onSignal: async signal => {
+    await reportToSentry({ event: 'shutdown', signal })
+  },
 })
 ```
+
+The hooks are called before `shutdownAll()` runs, allowing you to:
+
+- Report shutdown events to monitoring services (Sentry, Datadog, etc.)
+- Log shutdown reasons to files or external services
+- Send metrics or analytics
+- Perform custom cleanup that doesn't fit the resource model
+
+**Error handling:** If a hook throws an error, it will be logged but won't prevent shutdown. This ensures your application always cleans up resources properly, even if custom logic fails.
 
 ### Custom Error Handling
 
@@ -269,6 +271,31 @@ process.on('unhandledRejection', async error => {
   await reportToSentry(error)
   await supervisor.shutdownAll()
   process.exit(1)
+})
+```
+
+### Custom Signal Handling
+
+Disable automatic signal handling when you need custom behaviour:
+
+```typescript
+const supervisor = new ProcessSupervisor({
+  handleSignals: false,  // Disable automatic SIGINT/SIGTERM handling
+})
+
+// Now you control signal behaviour
+process.on('SIGINT', async () => {
+  console.log('Gracefully shutting down...')
+  await supervisor.shutdownAll()
+  process.exit(0)
+})
+```
+
+Or handle specific signals only:
+
+```typescript
+const supervisor = new ProcessSupervisor({
+  handleSignals: ['SIGTERM'],  // Only handle SIGTERM, not SIGINT
 })
 ```
 
