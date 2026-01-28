@@ -253,7 +253,11 @@ class ProcessSupervisor {
         this.isShuttingDown = true
 
         if (this.options.onSignal) {
-          await this.options.onSignal(signal)
+          try {
+            await this.options.onSignal(signal)
+          } catch (signalError) {
+            console.error('Error in onSignal hook:', signalError)
+          }
         }
 
         console.log(`\nReceived ${signal}, shutting down gracefully...`)
@@ -277,7 +281,11 @@ class ProcessSupervisor {
         console.error(logPrefix, error)
 
         if (this.options.onError) {
-          await this.options.onError(error)
+          try {
+            await this.options.onError(error)
+          } catch (hookError) {
+            console.error('Error in onError hook:', hookError)
+          }
         }
 
         await this.shutdownAll()

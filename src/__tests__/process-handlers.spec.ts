@@ -139,6 +139,30 @@ describe('Process handlers', () => {
     test.each(<NodeJS.Signals[]>[
       'SIGINT',
       'SIGTERM',
+    ])('continues shutdown if onSignal hook throws on %s', async signal => {
+      expect.assertions(4)
+
+      const hookError = new Error('Hook failed')
+      const onSignalMock = jest.fn().mockRejectedValue(hookError)
+      const { supervisor, mockedStop } = getSupervisorWithResource({
+        handleSignals: [signal],
+        onSignal: onSignalMock,
+      })
+
+      await supervisor.start('test')
+
+      const handler = processOnSpy.mock.calls[0][1]
+      await handler()
+
+      expect(onSignalMock).toHaveBeenCalledWith(signal)
+      expect(errorSpy).toHaveBeenCalledWith('Error in onSignal hook:', hookError)
+      expect(mockedStop).toHaveBeenCalledTimes(1)
+      expect(exitSpy).toHaveBeenCalledWith(0)
+    })
+
+    test.each(<NodeJS.Signals[]>[
+      'SIGINT',
+      'SIGTERM',
     ])('handles multiple resources on %s', async signal => {
       expect.assertions(3)
 
@@ -248,6 +272,31 @@ describe('Process handlers', () => {
       await handler(testError)
 
       expect(onErrorMock).toHaveBeenCalledWith(testError)
+      expect(mockedStop).toHaveBeenCalledTimes(1)
+      expect(exitSpy).toHaveBeenCalledWith(1)
+    })
+
+    test.each([
+      ['uncaughtException', 'Unexpected error:'],
+      ['unhandledRejection', 'Unhandled promise:'],
+    ])('continues shutdown if onError hook throws on %s', async event => {
+      expect.assertions(4)
+
+      const hookError = new Error('Hook failed')
+      const onErrorMock = jest.fn().mockRejectedValue(hookError)
+      const { supervisor, mockedStop } = getSupervisorWithResource({
+        handleUncaughtErrors: true,
+        onError: onErrorMock,
+      })
+
+      await supervisor.start('test')
+
+      const handler = processOnSpy.mock.calls.find(call => call[0] === event)![1]
+      const testError = new Error('Test error')
+      await handler(testError)
+
+      expect(onErrorMock).toHaveBeenCalledWith(testError)
+      expect(errorSpy).toHaveBeenCalledWith('Error in onError hook:', hookError)
       expect(mockedStop).toHaveBeenCalledTimes(1)
       expect(exitSpy).toHaveBeenCalledWith(1)
     })
