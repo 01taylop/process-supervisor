@@ -81,6 +81,8 @@ interface ProcessSupervisorOptions {
    * Use this to perform custom error handling like reporting to Sentry or logging
    * The supervisor will proceed with shutdownAll() after this callback completes
    *
+   * If this callback throws an error, it will be logged but shutdown will continue normally
+   *
    * @param error - The uncaught error or unhandled rejection
    */
   onError?: (error: unknown) => void | Promise<void>
@@ -89,6 +91,8 @@ interface ProcessSupervisorOptions {
    * Callback invoked before automatic shutdown when a signal is received
    * Use this to perform custom actions like logging or reporting to external services
    * The supervisor will proceed with shutdownAll() after this callback completes
+   *
+   * If this callback throws an error, it will be logged but shutdown will continue normally
    *
    * @param signal - The signal that triggered the shutdown (e.g., 'SIGINT', 'SIGTERM')
    */
