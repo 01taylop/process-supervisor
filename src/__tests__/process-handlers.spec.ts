@@ -8,11 +8,17 @@ describe('Process handlers', () => {
   const processOnSpy = jest.spyOn(process, 'on')
 
   const getSupervisorWithResource = ({
-    handleSignals = false as boolean | NodeJS.Signals[],
+    handleSignals = false,
     handleUncaughtErrors = false,
     mockedStop = jest.fn().mockResolvedValue(undefined),
-    onError = undefined as undefined | ((error: unknown) => void | Promise<void>),
-    onSignal = undefined as undefined | ((signal: string) => void | Promise<void>),
+    onError,
+    onSignal,
+  }: {
+    handleSignals?: boolean | NodeJS.Signals[],
+    handleUncaughtErrors?: boolean,
+    mockedStop?: jest.Mock<Promise<void>, []>,
+    onError?: (error: unknown) => void | Promise<void>,
+    onSignal?: (signal: string) => void | Promise<void>,
   }) => {
     const supervisor = new ProcessSupervisor({
       handleSignals,
@@ -65,6 +71,30 @@ describe('Process handlers', () => {
     test.each(<NodeJS.Signals[]>[
       'SIGINT',
       'SIGTERM',
+    ])('calls shutdownAll and exits with 1 if a resource fails to stop on %s', async signal => {
+      expect.assertions(5)
+
+      const error = new Error('Stop failed')
+      const { supervisor, mockedStop } = getSupervisorWithResource({
+        handleSignals: [signal],
+        mockedStop: jest.fn().mockRejectedValue(error)
+      })
+
+      await supervisor.start('test')
+
+      const handler = processOnSpy.mock.calls[0][1]
+      await handler()
+
+      expect(logSpy).toHaveBeenCalledWith(`\nReceived ${signal}, shutting down gracefully...`)
+      expect(mockedStop).toHaveBeenCalledTimes(1)
+      expect(supervisor.getState('test')).toBe(ProcessState.FAILED)
+      expect(errorSpy).toHaveBeenCalledWith('Failed to stop resource \"test\":', error)
+      expect(exitSpy).toHaveBeenCalledWith(1)
+    })
+
+    test.each(<NodeJS.Signals[]>[
+      'SIGINT',
+      'SIGTERM',
     ])('calls a provided onSignal hook before shutdown on %s', async signal => {
       expect.assertions(3)
 
@@ -104,30 +134,6 @@ describe('Process handlers', () => {
       expect(onSignalMock).toHaveBeenCalledWith(signal)
       expect(mockedStop).toHaveBeenCalledTimes(1)
       expect(exitSpy).toHaveBeenCalledWith(0)
-    })
-
-    test.each(<NodeJS.Signals[]>[
-      'SIGINT',
-      'SIGTERM',
-    ])('calls shutdownAll and exits with 1 if a resource fails to stop on %s', async signal => {
-      expect.assertions(5)
-
-      const error = new Error('Stop failed')
-      const { supervisor, mockedStop } = getSupervisorWithResource({
-        handleSignals: [signal],
-        mockedStop: jest.fn().mockRejectedValue(error)
-      })
-
-      await supervisor.start('test')
-
-      const handler = processOnSpy.mock.calls[0][1]
-      await handler()
-
-      expect(logSpy).toHaveBeenCalledWith(`\nReceived ${signal}, shutting down gracefully...`)
-      expect(mockedStop).toHaveBeenCalledTimes(1)
-      expect(supervisor.getState('test')).toBe(ProcessState.FAILED)
-      expect(errorSpy).toHaveBeenCalledWith('Failed to stop resource \"test\":', error)
-      expect(exitSpy).toHaveBeenCalledWith(1)
     })
 
     test.each(<NodeJS.Signals[]>[
