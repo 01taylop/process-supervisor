@@ -1,4 +1,4 @@
-# 🛸 Process Supervisor
+# 🪂 Process Supervisor
 
 [![Test](https://github.com/01taylop/process-supervisor/actions/workflows/test.yml/badge.svg)](https://github.com/01taylop/process-supervisor/actions/workflows/test.yml)
 
