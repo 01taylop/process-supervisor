@@ -6,7 +6,6 @@ import { ProcessSupervisor as ProcessSupervisorESM, ProcessState } from '../lib/
 
 import type { ChildProcess } from 'node:child_process'
 
-// @ts-ignore - CJS build doesn't have type definitions
 const { ProcessSupervisor: ProcessSupervisorCJS } = await import('../lib/index.cjs')
 
 describe.each([
