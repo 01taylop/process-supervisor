@@ -37,14 +37,14 @@ describe.each([
     supervisor.register('sleep', SLEEP_PROCESS)
 
     await supervisor.start('sleep')
-    const resource = (supervisor as any).resources.get('sleep')
+    const instance = supervisor.getInstance<ChildProcess>('sleep')
 
-    expect(resource.instance.killed).toBe(false)
+    expect(instance?.killed).toBe(false)
     expect(supervisor.getState('sleep')).toBe(ProcessState.RUNNING)
 
     await supervisor.stop('sleep')
 
-    expect(resource.instance.killed).toBe(true)
+    expect(instance?.killed).toBe(true)
     expect(supervisor.getState('sleep')).toBe(ProcessState.STOPPED)
   })
 
@@ -56,19 +56,18 @@ describe.each([
     supervisor.register('sleep', SLEEP_PROCESS)
 
     await supervisor.start('sleep')
-    const resource = (supervisor as any).resources.get('sleep')
-    const firstPid = resource.instance.pid
+    const firstPid = supervisor.getInstance<ChildProcess>('sleep')?.pid
 
     await supervisor.stop('sleep')
     await supervisor.start('sleep')
-    const secondPid = resource.instance.pid
+    const secondPid = supervisor.getInstance<ChildProcess>('sleep')?.pid
 
     await supervisor.stop('sleep')
 
     expect(firstPid).toBeGreaterThan(0)
     expect(secondPid).toBeGreaterThan(0)
     expect(secondPid).not.toBe(firstPid)
-    expect(resource.instance.killed).toBe(true)
+    expect(supervisor.getInstance<ChildProcess>('sleep')?.killed).toBe(true)
     expect(supervisor.getState('sleep')).toBe(ProcessState.STOPPED)
   })
 
@@ -109,7 +108,7 @@ describe.each([
     const mockWatcher = { close: jest.fn(() => Promise.resolve()) }
     supervisor.register('watcher', {
       start: () => mockWatcher,
-      stop: (w: any) => w.close()
+      stop: (watcher: typeof mockWatcher) => watcher.close()
     })
 
     await supervisor.start('sleep')
@@ -161,11 +160,10 @@ describe.each([
     expect(supervisor.getState('hang')).toBe(ProcessState.FAILED)
 
     // Cleanup: kill the hanging process
-    const resource = (supervisor as any).resources.get('hang')
-    resource.instance.kill('SIGKILL')
+    supervisor.getInstance<ChildProcess>('hang')?.kill('SIGKILL')
   })
 
-  test('getInstance returns real child process instance', async () => {
+  test('getting the real child process instance', async () => {
     expect.assertions(4)
 
     const supervisor = new ProcessSupervisor()
