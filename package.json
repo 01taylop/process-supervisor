@@ -30,6 +30,7 @@
   },
   "devDependencies": {
     "@changesets/cli": "3.0.3",
+    "@jest/globals": "30.5.2",
     "@rollup/plugin-node-resolve": "16.0.3",
     "@rollup/plugin-terser": "1.0.2",
     "@rollup/plugin-typescript": "12.3.1",
@@ -45,7 +46,16 @@
     "typescript": "6.0.3"
   },
   "author": "Patrick Taylor <hello@patricktaylor.dev>",
-  "keywords": [],
+  "keywords": [
+    "child-process",
+    "cleanup",
+    "graceful-shutdown",
+    "lifecycle",
+    "process",
+    "shutdown",
+    "signals",
+    "supervisor"
+  ],
   "license": "MIT",
   "packageManager": "yarn@4.19.0"
 }
