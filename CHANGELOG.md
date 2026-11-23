@@ -1,5 +1,12 @@
 # process-supervisor
 
+## 1.0.1
+
+### Patch Changes
+
+- 398771b: Fixed TypeScript types for CommonJS consumers and for ESM consumers using `node16` module resolution
+- 398771b: Marked the package as side-effect free so bundlers can tree-shake it
+
 ## 1.0.0
 
 ### Major Changes
