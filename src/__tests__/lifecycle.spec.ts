@@ -14,7 +14,7 @@ describe('Lifecycle methods', () => {
       stop: mockedStop,
     })
 
-    const resource = (supervisor as any).resources.get('test')
+    const resource = supervisor['getResource']('test')
     resource.state = initialState
 
     return {
@@ -46,7 +46,7 @@ describe('Lifecycle methods', () => {
       )
     })
 
-    test.each([
+    it.each([
       [ProcessState.STARTING, 'Resource "test" is already starting'],
       [ProcessState.RUNNING, 'Resource "test" is already running'],
       [ProcessState.STOPPING, 'Resource "test" is still stopping, cannot start'],
@@ -64,7 +64,7 @@ describe('Lifecycle methods', () => {
       expect(mockedStart).not.toHaveBeenCalled()
     })
 
-    test.each([
+    it.each([
       ProcessState.IDLE,
       ProcessState.STOPPED,
       ProcessState.FAILED,
@@ -85,9 +85,9 @@ describe('Lifecycle methods', () => {
       expect(mockedStart).toHaveBeenCalledTimes(1)
     })
 
-    test.each([
-      ['asynchronous', (instance: any) => Promise.resolve(instance)],
-      ['synchronous', (instance: any) => instance],
+    it.each([
+      ['asynchronous', (instance: unknown) => Promise.resolve(instance)],
+      ['synchronous', (instance: unknown) => instance],
     ])('stores the instance returned by %s start functions', async (_, startFn) => {
       expect.assertions(3)
 
@@ -160,7 +160,7 @@ describe('Lifecycle methods', () => {
       expect(mockedStop).not.toHaveBeenCalled()
     })
 
-    test.each([
+    it.each([
       [ProcessState.STOPPING, 'Resource "test" is already stopping'],
       [ProcessState.STOPPED, 'Resource "test" is already stopped'],
       [ProcessState.STARTING, 'Resource "test" is still starting, cannot stop'],
@@ -178,7 +178,7 @@ describe('Lifecycle methods', () => {
       expect(mockedStop).not.toHaveBeenCalled()
     })
 
-    test.each([
+    it.each([
       ProcessState.RUNNING,
       ProcessState.FAILED,
     ])('transitions the state from %s to stopping to stopped', async initialState => {
@@ -198,9 +198,9 @@ describe('Lifecycle methods', () => {
       expect(mockedStop).toHaveBeenCalledTimes(1)
     })
 
-    test.each([
-      ['asynchronous', (instance: any) => Promise.resolve(instance)],
-      ['synchronous', (instance: any) => instance],
+    it.each([
+      ['asynchronous', (instance: unknown) => Promise.resolve(instance)],
+      ['synchronous', (instance: unknown) => instance],
     ])('passes the instance to the stop function from %s start functions', async (_, startFn) => {
       expect.assertions(2)
 

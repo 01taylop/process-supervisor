@@ -47,7 +47,7 @@ describe('Process handlers', () => {
 
   describe('handleSignals', () => {
 
-    test.each(<NodeJS.Signals[]>[
+    it.each(<NodeJS.Signals[]>[
       'SIGINT',
       'SIGTERM',
     ])('calls shutdownAll and exits with 0 on %s', async signal => {
@@ -68,7 +68,7 @@ describe('Process handlers', () => {
       expect(exitSpy).toHaveBeenCalledWith(0)
     })
 
-    test.each(<NodeJS.Signals[]>[
+    it.each(<NodeJS.Signals[]>[
       'SIGINT',
       'SIGTERM',
     ])('calls shutdownAll and exits with 1 if a resource fails to stop on %s', async signal => {
@@ -92,7 +92,7 @@ describe('Process handlers', () => {
       expect(exitSpy).toHaveBeenCalledWith(1)
     })
 
-    test.each(<NodeJS.Signals[]>[
+    it.each(<NodeJS.Signals[]>[
       'SIGINT',
       'SIGTERM',
     ])('calls a provided onSignal hook before shutdown on %s', async signal => {
@@ -114,7 +114,7 @@ describe('Process handlers', () => {
       expect(exitSpy).toHaveBeenCalledWith(0)
     })
 
-    test.each(<NodeJS.Signals[]>[
+    it.each(<NodeJS.Signals[]>[
       'SIGINT',
       'SIGTERM',
     ])('awaits an async onSignal hook before shutdown on %s', async signal => {
@@ -136,7 +136,7 @@ describe('Process handlers', () => {
       expect(exitSpy).toHaveBeenCalledWith(0)
     })
 
-    test.each(<NodeJS.Signals[]>[
+    it.each(<NodeJS.Signals[]>[
       'SIGINT',
       'SIGTERM',
     ])('continues shutdown if onSignal hook throws on %s', async signal => {
@@ -160,7 +160,7 @@ describe('Process handlers', () => {
       expect(exitSpy).toHaveBeenCalledWith(0)
     })
 
-    test.each(<NodeJS.Signals[]>[
+    it.each(<NodeJS.Signals[]>[
       'SIGINT',
       'SIGTERM',
     ])('handles multiple resources on %s', async signal => {
@@ -207,7 +207,7 @@ describe('Process handlers', () => {
 
   describe('handleUncaughtErrors', () => {
 
-    test.each([
+    it.each([
       ['uncaughtException', 'Unexpected error:'],
       ['unhandledRejection', 'Unhandled promise:'],
     ])('calls shutdownAll and exits with 1 on %s', async (event, errorMessage) => {
@@ -230,7 +230,7 @@ describe('Process handlers', () => {
       expect(exitSpy).toHaveBeenCalledWith(1)
     })
 
-    test.each([
+    it.each([
       ['uncaughtException', 'Unexpected error:'],
       ['unhandledRejection', 'Unhandled promise:'],
     ])('calls a provided onError hook before shutdown on %s', async event => {
@@ -253,7 +253,7 @@ describe('Process handlers', () => {
       expect(exitSpy).toHaveBeenCalledWith(1)
     })
 
-    test.each([
+    it.each([
       ['uncaughtException', 'Unexpected error:'],
       ['unhandledRejection', 'Unhandled promise:'],
     ])('awaits an async onError hook before shutdown on %s', async event => {
@@ -276,7 +276,7 @@ describe('Process handlers', () => {
       expect(exitSpy).toHaveBeenCalledWith(1)
     })
 
-    test.each([
+    it.each([
       ['uncaughtException', 'Unexpected error:'],
       ['unhandledRejection', 'Unhandled promise:'],
     ])('continues shutdown if onError hook throws on %s', async event => {

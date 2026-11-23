@@ -1,8 +1,8 @@
-# 🛸 Process Supervisor
+# 🪂 Process Supervisor
 
 [![Test](https://github.com/01taylop/process-supervisor/actions/workflows/test.yml/badge.svg)](https://github.com/01taylop/process-supervisor/actions/workflows/test.yml)
 
-![Node Versions Supported](https://img.shields.io/static/v1?label=node&message=>=18.18.0&color=blue)
+![Node Versions Supported](https://img.shields.io/node/v/process-supervisor?color=blue)
 
 Automatic graceful shutdown for Node.js applications. Manage child processes, file watchers, and servers with zero boilerplate and zero dependencies.
 

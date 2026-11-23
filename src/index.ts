@@ -16,7 +16,7 @@ class ProcessSupervisor {
   private readonly options: ProcessSupervisorOptions
 
   private isShuttingDown = false
-  private resources: Map<string, ManagedResource<any>> = new Map()
+  private resources: Map<string, ManagedResource> = new Map()
 
   constructor(options: ProcessSupervisorOptions = {}) {
     this.defaultTimeout = options.defaultTimeout ?? 5000
@@ -56,7 +56,7 @@ class ProcessSupervisor {
       state: ProcessState.IDLE,
     }
 
-    this.resources.set(id, resource)
+    this.resources.set(id, resource as unknown as ManagedResource) // Resources hold different instance types, so they are stored as unknown
   }
 
   /**
@@ -236,7 +236,7 @@ class ProcessSupervisor {
   // Private Methods
   // ==================================================
 
-  private getResource(id: string): ManagedResource<any> {
+  private getResource(id: string): ManagedResource {
     const resource = this.resources.get(id)
     if (!resource) {
       throw new Error(`Resource with id "${id}" is not registered`)
